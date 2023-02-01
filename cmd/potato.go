@@ -25,3 +25,13 @@ func Execute() {
 		os.Exit(1)
 	}
 }
+
+func init() {
+	cobra.OnInitialize(initConfig)
+
+}
+
+func initConfig() {
+	// Don't forget to read config either from cfgFile or from home directory!
+
+}
