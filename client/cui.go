@@ -1,6 +1,7 @@
 package client
 
 import (
+	"PotatoIM/client/sdk"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -18,11 +19,50 @@ func init() {
 }
 
 var (
-	buf string
-	// chat    *sdk.Chat
+	buf     string
+	chat    *sdk.Chat
 	step    int
 	verbose bool
 )
+
+// 主要的三种数据结构
+// connection， message， chat
+func doSay(g *gocui.Gui, cv *gocui.View) {
+	//step1: get input
+	//step2: print my words
+	//step3: send my words to channel
+	v, err := g.View("out")
+	if cv != nil && err == nil {
+		p := cv.ReadEditor()
+		if p != nil {
+			msg := &sdk.Message{
+				Type:       sdk.MsgTypeText,
+				Name:       "admin",
+				FromUserID: "0001",
+				ToUserID:   "0002",
+				Content:    string(p),
+			}
+			viewPrint(g, "me", msg.Content, false)
+			chat.Send(msg)
+		}
+		v.Autoscroll = true
+	}
+}
+
+// doRecv work in goroutine
+func doRecv(g *gocui.Gui) {
+	recvChannel := chat.Recv()
+	for msg := range recvChannel {
+		if msg != nil {
+			switch msg.Type {
+			case sdk.MsgTypeText:
+				viewPrint(g, msg.Name, msg.Content, false)
+			}
+
+		}
+	}
+
+}
 
 func setHeadText(g *gocui.Gui, msg string) {
 	v, err := g.View("head")
@@ -58,11 +98,6 @@ func viewPrint(g *gocui.Gui, name, msg string, newline bool) {
 	g.Update(out.Show)
 }
 
-// doRecv work in goroutine
-func doRecv(g *gocui.Gui) {
-	fmt.Println("doRecv")
-}
-
 func quit(g *gocui.Gui, v *gocui.View) error {
 	// chat.Close()
 	fmt.Println("doQuit")
@@ -70,10 +105,6 @@ func quit(g *gocui.Gui, v *gocui.View) error {
 	buf = ov.Buffer()
 	g.Close()
 	return gocui.ErrQuit
-}
-
-func doSay(g *gocui.Gui, cv *gocui.View) {
-	fmt.Println("doSay")
 }
 
 func viewUpdate(g *gocui.Gui, cv *gocui.View) error {
@@ -201,7 +232,7 @@ func pasteDown(g *gocui.Gui, cv *gocui.View) error {
 
 func RunMain() {
 	// step1 创建chat的核心对象
-	// chat = sdk.NewChat(net.ParseIP("0.0.0.0"), 8900, "logic", "12312321", "2131")
+	chat = sdk.NewChat("0.0.0.0", "zzx", "12312321", "2131") //(net.ParseIP("0.0.0.0"), 8900, "logic", "12312321", "2131")
 	// step2 创建 GUI 图层对象并进行参与与回调函数的配置
 	g, err := gocui.NewGui(gocui.OutputNormal)
 	if err != nil {
